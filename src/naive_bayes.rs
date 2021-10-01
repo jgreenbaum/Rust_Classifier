@@ -24,6 +24,8 @@ struct Classification {
     words: HashMap<String, (u32, f64)>,
 }
 
+type WordCounts = Vec<(String, u32)>;
+
 impl Classifier {
     
     /// Creates a new classifier
@@ -41,7 +43,7 @@ impl Classifier {
     /// aware of and will train on next time the `train()` method is called. The tuples' 
     /// first member is a token as a string, and the second member is the number of times
     /// that token appears in the document. 
-    pub fn add_document_word_counts(&mut self, document: &Vec<(&String, u32)>, label: &String) 
+    pub fn add_document_word_counts(&mut self, document: &WordCounts, label: &String) 
     {
         if document.len() == 0 { return; }
         
@@ -64,34 +66,37 @@ impl Classifier {
 
 
     /// Takes a document that has been tokenized, and returns a vector of 
-    /// word counts
-    fn count_tokens(document: &Vec<String>) -> Vec<(&String, u32)> {
+    /// word counts. The words are in arbitrary order.
+    fn count_tokens(document: &Vec<String>) -> WordCounts {
         let mut token_counts: HashMap<&String, u32> = HashMap::new();
         for word in document.iter() {
             let word_count = token_counts.entry(word).or_insert(0);
             *word_count = *word_count+ 1;
         }
         
-        token_counts.iter().map(|(key,val)| (*key, *val)).collect()
+        // Collect up the word counts
+        token_counts.iter().map(|(key,val)| ((*key).clone(), *val)).collect()
     }
 
     /// Takes a document that has been tokenized into a vector of strings
     /// and a label and adds the document to the list of documents that the
     /// classifier is aware of and will train on next time the `train()` method is called
-    pub fn add_document_tokenized(&mut self, document: &Vec<String>, label: &String) {
-        if document.len() == 0 { return; }
+    pub fn add_document_tokenized(&mut self, document: &Vec<String>, label: &String) -> WordCounts {
+        if document.len() == 0 { return Vec::new(); }
         
         let word_counts = Self::count_tokens(document);
 
-        self.add_document_word_counts(&word_counts, label)
+        self.add_document_word_counts(&word_counts, label);
+
+        word_counts
     }
 
     /// Takes a document and a label and tokenizes the document by
     /// breaking on whitespace characters. The document is added to the list
     /// of documents that the classifier is aware of and will train on next time
     /// the `train()` method is called 
-    pub fn add_document(&mut self, document: &String, label: &String) {
-        self.add_document_tokenized(&split_document(document), label);
+    pub fn add_document(&mut self, document: &String, label: &String) -> WordCounts {
+        self.add_document_tokenized(&split_document(document), label)
     }
 
     /// Adds a list of (document, label) tuples to the classifier
