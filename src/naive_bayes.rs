@@ -36,10 +36,13 @@ impl Classifier {
         }
     }
 
-    /// Takes a document that has been tokenized into a vector of strings
-    /// and a label and adds the document to the list of documents that the
-    /// classifier is aware of and will train on next time the `train()` method is called
-    pub fn add_document_tokenized(&mut self, document: &Vec<String>, label: &String) {
+    /// Takes a document that has been tokenized into a vector of tuples and a classifier
+    /// label and adds the document to the list of documents that the classifier is 
+    /// aware of and will train on next time the `train()` method is called. The tuples' 
+    /// first member is a token as a string, and the second member is the number of times
+    /// that token appears in the document. 
+    pub fn add_document_word_counts(&mut self, document: &Vec<(&String, u32)>, label: &String) 
+    {
         if document.len() == 0 { return; }
         
         // make sure the classification already exists
@@ -49,14 +52,38 @@ impl Classifier {
         }
 
         let mut classification = self.classifications.get_mut(label).unwrap();
-                
-        for word in document.iter() {
-            classification.add_word(word);
+
+        for (word, count) in document.iter() {
+            classification.add_word_count(word, *count);
             self.vocab.insert(word.to_string());
         }
 
         self.num_examples += 1;
-        classification.num_examples += 1;
+        classification.num_examples += 1;        
+    }
+
+
+    /// Takes a document that has been tokenized, and returns a vector of 
+    /// word counts
+    fn count_tokens(document: &Vec<String>) -> Vec<(&String, u32)> {
+        let mut token_counts: HashMap<&String, u32> = HashMap::new();
+        for word in document.iter() {
+            let word_count = token_counts.entry(word).or_insert(0);
+            *word_count = *word_count+ 1;
+        }
+        
+        token_counts.iter().map(|(key,val)| (*key, *val)).collect()
+    }
+
+    /// Takes a document that has been tokenized into a vector of strings
+    /// and a label and adds the document to the list of documents that the
+    /// classifier is aware of and will train on next time the `train()` method is called
+    pub fn add_document_tokenized(&mut self, document: &Vec<String>, label: &String) {
+        if document.len() == 0 { return; }
+        
+        let word_counts = Self::count_tokens(document);
+
+        self.add_document_word_counts(&word_counts, label)
     }
 
     /// Takes a document and a label and tokenizes the document by
@@ -176,8 +203,8 @@ impl Classification {
         }
     }
 
-    fn add_word(&mut self, word: &String) {
-        self.num_words += 1;
+    fn add_word_count(&mut self, word: &String, count: u32) {
+        self.num_words += count;
         if self.words.contains_key(word) {
             self.words.get_mut(word).unwrap().0 += 1;
         } else {
