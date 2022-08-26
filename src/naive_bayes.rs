@@ -24,7 +24,7 @@ struct Classification {
     words: HashMap<String, (u32, f64)>,
 }
 
-type WordCounts = Vec<(String, u32)>;
+pub type WordCounts = Vec<(String, u32)>;
 
 impl Classifier {
     
@@ -71,7 +71,7 @@ impl Classifier {
         let mut token_counts: HashMap<&String, u32> = HashMap::new();
         for word in document.iter() {
             let word_count = token_counts.entry(word).or_insert(0);
-            *word_count = *word_count+ 1;
+            *word_count = *word_count + 1;
         }
         
         // Collect up the word counts

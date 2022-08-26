@@ -42,3 +42,4 @@ extern crate regex;
 
 mod naive_bayes;
 pub use self::naive_bayes::Classifier as NaiveBayes;
+pub use self::naive_bayes::WordCounts as WordCounts;
